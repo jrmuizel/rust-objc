@@ -2,9 +2,11 @@ use std::ops::{Deref, DerefMut};
 use std::os::raw::c_char;
 use std::sync::{Once, ONCE_INIT};
 
+use objc_encode::Encode;
+use objc_encode::encoding::{Primitive, Struct};
+
 use declare::{ClassDecl, ProtocolDecl};
 use runtime::{Class, Object, Protocol, Sel, self};
-use {Encode, Encoding};
 
 pub struct CustomObject {
     obj: *mut Object,
@@ -50,15 +52,10 @@ pub struct CustomStruct {
 }
 
 unsafe impl Encode for CustomStruct {
-    fn encode() -> Encoding {
-        let mut code = "{CustomStruct=".to_owned();
-        for _ in 0..4 {
-            code.push_str(u64::encode().as_str());
-        }
-        code.push_str("}");
-        unsafe {
-            Encoding::from_str(&code)
-        }
+    type Encoding = Struct<&'static str, (Primitive, Primitive, Primitive, Primitive)>;
+
+    fn encode() -> Self::Encoding {
+        Struct::new("CustomStruct", (u64::encode(), u64::encode(), u64::encode(), u64::encode()))
     }
 }
 

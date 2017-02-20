@@ -38,8 +38,10 @@ use std::ffi::CString;
 use std::mem;
 use std::ptr;
 
+use objc_encode::{Encode, Encodings};
+
 use runtime::{BOOL, Class, Imp, NO, Object, Protocol, Sel, self};
-use {Encode, EncodeArguments, Encoding, Message};
+use {EncodeArguments, Message};
 
 /// Types that can be used as the implementation of an Objective-C method.
 pub trait MethodImplementation {
@@ -91,12 +93,12 @@ fn count_args(sel: Sel) -> usize {
     sel.name().chars().filter(|&c| c == ':').count()
 }
 
-fn method_type_encoding(ret: &Encoding, args: &[Encoding]) -> CString {
-    let mut types = ret.as_str().to_owned();
+fn method_type_encoding<A, R>() -> CString
+        where A: EncodeArguments, R: Encode {
     // First two arguments are always self and the selector
-    types.push_str(<*mut Object>::encode().as_str());
-    types.push_str(Sel::encode().as_str());
-    types.extend(args.iter().map(|e| e.as_str()));
+    let mut types = format!("{}{}{}",
+        R::encode(), <*mut Object>::encode(), Sel::encode());
+    A::encodings().write_all(&mut types).unwrap();
     CString::new(types).unwrap()
 }
 
@@ -166,15 +168,13 @@ impl ClassDecl {
     /// are expected when the method is invoked from Objective-C.
     pub unsafe fn add_method<F>(&mut self, sel: Sel, func: F)
             where F: MethodImplementation<Callee=Object> {
-        let encs = F::Args::encodings();
-        let encs = encs.as_ref();
         let sel_args = count_args(sel);
-        assert!(sel_args == encs.len(),
+        assert!(sel_args == F::Args::len(),
             "Selector accepts {} arguments, but function accepts {}",
-            sel_args, encs.len(),
+            sel_args, F::Args::len(),
         );
 
-        let types = method_type_encoding(&F::Ret::encode(), encs);
+        let types = method_type_encoding::<F::Args, F::Ret>();
         let success = runtime::class_addMethod(self.cls, sel, func.imp(),
             types.as_ptr());
         assert!(success != NO, "Failed to add method {:?}", sel);
@@ -187,15 +187,13 @@ impl ClassDecl {
     /// are expected when the method is invoked from Objective-C.
     pub unsafe fn add_class_method<F>(&mut self, sel: Sel, func: F)
             where F: MethodImplementation<Callee=Class> {
-        let encs = F::Args::encodings();
-        let encs = encs.as_ref();
         let sel_args = count_args(sel);
-        assert!(sel_args == encs.len(),
+        assert!(sel_args == F::Args::len(),
             "Selector accepts {} arguments, but function accepts {}",
-            sel_args, encs.len(),
+            sel_args, F::Args::len(),
         );
 
-        let types = method_type_encoding(&F::Ret::encode(), encs);
+        let types = method_type_encoding::<F::Args, F::Ret>();
         let metaclass = (*self.cls).metaclass() as *const _ as *mut _;
         let success = runtime::class_addMethod(metaclass, sel, func.imp(),
             types.as_ptr());
@@ -206,7 +204,7 @@ impl ClassDecl {
     /// Panics if the ivar wasn't successfully added.
     pub fn add_ivar<T>(&mut self, name: &str) where T: Encode {
         let c_name = CString::new(name).unwrap();
-        let encoding = CString::new(T::encode().as_str()).unwrap();
+        let encoding = CString::new(T::encode().to_string()).unwrap();
         let size = mem::size_of::<T>();
         let align = log2_align_of::<T>();
         let success = unsafe {
@@ -269,14 +267,12 @@ impl ProtocolDecl {
             is_instance_method: bool)
             where Args: EncodeArguments,
                   Ret: Encode {
-        let encs = Args::encodings();
-        let encs = encs.as_ref();
         let sel_args = count_args(sel);
-        assert!(sel_args == encs.len(),
+        assert!(sel_args == Args::len(),
             "Selector accepts {} arguments, but function accepts {}",
-            sel_args, encs.len(),
+            sel_args, Args::len(),
         );
-        let types = method_type_encoding(&Ret::encode(), encs);
+        let types = method_type_encoding::<Args, Ret>();
         unsafe {
             runtime::protocol_addMethodDescription(
                 self.proto, sel, types.as_ptr(), is_required as BOOL, is_instance_method as BOOL);

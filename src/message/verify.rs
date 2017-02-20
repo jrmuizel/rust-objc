@@ -1,6 +1,8 @@
-use runtime::{Class, Object, Sel};
+use runtime::{Class, Method, Sel};
 use {Encode, EncodeArguments};
 use super::MessageError;
+
+use objc_encode::{Encoding, Encodings, EncodingsIterateCallback};
 
 pub fn verify_message_signature<A, R>(cls: &Class, sel: Sel)
         -> Result<(), MessageError>
@@ -15,18 +17,15 @@ pub fn verify_message_signature<A, R>(cls: &Class, sel: Sel)
 
     let ret = R::encode();
     let expected_ret = method.return_type();
-    if ret != expected_ret {
+    if expected_ret != ret {
         return Err(MessageError(
-            format!("Return type code {:?} does not match expected {:?} for method {:?}",
+            format!("Return type code {} does not match expected {} for method {:?}",
                 ret, expected_ret, method.name())
         ));
     }
 
-    let self_and_cmd = [<*mut Object>::encode(), Sel::encode()];
-    let args = A::encodings();
-    let args = args.as_ref();
-
-    let count = self_and_cmd.len() + args.len();
+    // Add 2 for self and _cmd
+    let count = 2 + A::len();
     let expected_count = method.arguments_count();
     if count != expected_count {
         return Err(MessageError(
@@ -35,15 +34,49 @@ pub fn verify_message_signature<A, R>(cls: &Class, sel: Sel)
         ));
     }
 
-    for (i, arg) in self_and_cmd.iter().chain(args).enumerate() {
-        let expected = method.argument_type(i).unwrap();
-        if *arg != expected {
-            return Err(MessageError(
-                format!("Method {:?} expected argument at index {} with type code {:?} but was given {:?}",
-                    method.name(), i, expected, arg)
-            ));
+    let args = A::encodings();
+    let mut comparator = MethodEncodingsComparator::new(method);
+    args.each(&mut comparator);
+
+    comparator.result
+}
+
+struct MethodEncodingsComparator<'a> {
+    method: &'a Method,
+    index: usize,
+    result: Result<(), MessageError>,
+}
+
+impl<'a> MethodEncodingsComparator<'a> {
+    fn new(method: &Method) -> MethodEncodingsComparator {
+        MethodEncodingsComparator {
+            method: method,
+            // Start at 2 to skip self and _cmd
+            index: 2,
+            result: Ok(()),
         }
     }
+}
 
-    Ok(())
+impl<'a> EncodingsIterateCallback for MethodEncodingsComparator<'a> {
+    fn call<E: ?Sized + Encoding>(&mut self, encoding: &E) -> bool {
+        let index = self.index;
+        self.index += 1;
+        let expected = self.method.argument_type(index);
+        if !expected.as_ref().map_or(false, |e| e == encoding) {
+            let error = if let Some(expected) = expected {
+                format!("Method {:?} expected argument at index {} with type code {} but was given {}",
+                    self.method.name(), index, expected, encoding)
+            } else {
+                format!("Method {:?} expected no argument at index {} but was given {}",
+                    self.method.name(), index, encoding)
+            };
+            self.result = Err(MessageError(error));
+            // stop iteration
+            true
+        } else {
+            // don't stop iteration
+            false
+        }
+    }
 }

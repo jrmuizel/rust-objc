@@ -8,10 +8,12 @@ use std::fmt;
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 use std::ptr;
 use std::str;
-use malloc_buf::Malloc;
 
-use encode;
-use {Encode, Encoding};
+use malloc_buf::Malloc;
+use objc_encode::Encode;
+use objc_encode::parse::StrEncoding;
+
+use encode::{MallocEncoding, self};
 
 /// The Objective-C `BOOL` type.
 ///
@@ -191,12 +193,12 @@ impl Ivar {
     }
 
     /// Returns the `Encoding` of self.
-    pub fn type_encoding(&self) -> Encoding {
+    pub fn type_encoding(&self) -> &StrEncoding {
         let encoding = unsafe {
             CStr::from_ptr(ivar_getTypeEncoding(self))
         };
         let s = str::from_utf8(encoding.to_bytes()).unwrap();
-        encode::from_str(s)
+        StrEncoding::from_str_unchecked(s)
     }
 }
 
@@ -209,7 +211,7 @@ impl Method {
     }
 
     /// Returns the `Encoding` of self's return type.
-    pub fn return_type(&self) -> Encoding {
+    pub fn return_type(&self) -> MallocEncoding {
         unsafe {
             let encoding = method_copyReturnType(self);
             encode::from_malloc_str(encoding)
@@ -218,7 +220,7 @@ impl Method {
 
     /// Returns the `Encoding` of a single parameter type of self, or
     /// `None` if self has no parameter at the given index.
-    pub fn argument_type(&self, index: usize) -> Option<Encoding> {
+    pub fn argument_type(&self, index: usize) -> Option<MallocEncoding> {
         unsafe {
             let encoding = method_copyArgumentType(self, index as c_uint);
             if encoding.is_null() {
@@ -446,7 +448,7 @@ impl Object {
             let cls = self.class();
             match cls.instance_variable(name) {
                 Some(ivar) => {
-                    assert!(ivar.type_encoding() == T::encode());
+                    assert!(ivar.type_encoding() == &T::encode());
                     ivar.offset()
                 }
                 None => panic!("Ivar {} not found on class {:?}", name, cls),
@@ -469,7 +471,7 @@ impl Object {
             let cls = self.class();
             match cls.instance_variable(name) {
                 Some(ivar) => {
-                    assert!(ivar.type_encoding() == T::encode());
+                    assert!(ivar.type_encoding() == &T::encode());
                     ivar.offset()
                 }
                 None => panic!("Ivar {} not found on class {:?}", name, cls),
@@ -509,7 +511,7 @@ mod tests {
         let cls = test_utils::custom_class();
         let ivar = cls.instance_variable("_foo").unwrap();
         assert!(ivar.name() == "_foo");
-        assert!(ivar.type_encoding() == <u32>::encode());
+        assert!(ivar.type_encoding() == &<u32>::encode());
         assert!(ivar.offset() > 0);
 
         let ivars = cls.instance_variables();
