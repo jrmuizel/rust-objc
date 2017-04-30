@@ -3,13 +3,14 @@
 //! For more information on foreign functions, see Apple's documentation:
 //! https://developer.apple.com/library/mac/documentation/Cocoa/Reference/ObjCRuntimeRef/index.html
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::fmt;
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 use std::ptr;
 use std::str;
 
 use malloc_buf::Malloc;
+use nul::NulTerminatedStr;
 use objc_encode::Encode;
 use objc_encode::parse::StrEncoding;
 
@@ -135,10 +136,10 @@ extern {
 impl Sel {
     /// Registers a method with the Objective-C runtime system,
     /// maps the method name to a selector, and returns the selector value.
-    pub fn register(name: &str) -> Sel {
-        let name = CString::new(name).unwrap();
+    pub fn register(name: &NulTerminatedStr) -> Sel {
+        let name_ptr = name.as_ptr() as *const c_char;
         unsafe {
-            sel_registerName(name.as_ptr())
+            sel_registerName(name_ptr)
         }
     }
 
@@ -249,10 +250,10 @@ impl Method {
 impl Class {
     /// Returns the class definition of a specified class, or `None` if the
     /// class is not registered with the Objective-C runtime.
-    pub fn get(name: &str) -> Option<&'static Class> {
-        let name = CString::new(name).unwrap();
+    pub fn get(name: &NulTerminatedStr) -> Option<&'static Class> {
+        let name_ptr = name.as_ptr() as *const c_char;
         unsafe {
-            let cls = objc_getClass(name.as_ptr());
+            let cls = objc_getClass(name_ptr);
             if cls.is_null() { None } else { Some(&*cls) }
         }
     }
@@ -316,10 +317,10 @@ impl Class {
 
     /// Returns the ivar for a specified instance variable of self, or `None`
     /// if self has no ivar with the given name.
-    pub fn instance_variable(&self, name: &str) -> Option<&Ivar> {
-        let name = CString::new(name).unwrap();
+    pub fn instance_variable(&self, name: &NulTerminatedStr) -> Option<&Ivar> {
+        let name_ptr = name.as_ptr() as *const c_char;
         unsafe {
-            let ivar = class_getInstanceVariable(self, name.as_ptr());
+            let ivar = class_getInstanceVariable(self, name_ptr);
             if ivar.is_null() { None } else { Some(&*ivar) }
         }
     }
@@ -377,10 +378,10 @@ impl fmt::Debug for Class {
 impl Protocol {
     /// Returns the protocol definition of a specified protocol, or `None` if the
     /// protocol is not registered with the Objective-C runtime.
-    pub fn get(name: &str) -> Option<&'static Protocol> {
-        let name = CString::new(name).unwrap();
+    pub fn get(name: &NulTerminatedStr) -> Option<&'static Protocol> {
+        let name_ptr = name.as_ptr() as *const c_char;
         unsafe {
-            let proto = objc_getProtocol(name.as_ptr());
+            let proto = objc_getProtocol(name_ptr);
             if proto.is_null() { None } else { Some(&*proto) }
         }
     }
@@ -443,7 +444,8 @@ impl Object {
     /// Panics if self has no ivar with the given name.
     /// Unsafe because the caller must ensure that the ivar is actually
     /// of type `T`.
-    pub unsafe fn get_ivar<T>(&self, name: &str) -> &T where T: Encode {
+    pub unsafe fn get_ivar<T>(&self, name: &NulTerminatedStr) -> &T
+            where T: Encode {
         let offset = {
             let cls = self.class();
             match cls.instance_variable(name) {
@@ -465,7 +467,7 @@ impl Object {
     /// Panics if self has no ivar with the given name.
     /// Unsafe because the caller must ensure that the ivar is actually
     /// of type `T`.
-    pub unsafe fn get_mut_ivar<T>(&mut self, name: &str) -> &mut T
+    pub unsafe fn get_mut_ivar<T>(&mut self, name: &NulTerminatedStr) -> &mut T
             where T: Encode {
         let offset = {
             let cls = self.class();
@@ -488,7 +490,7 @@ impl Object {
     /// Panics if self has no ivar with the given name.
     /// Unsafe because the caller must ensure that the ivar is actually
     /// of type `T`.
-    pub unsafe fn set_ivar<T>(&mut self, name: &str, value: T)
+    pub unsafe fn set_ivar<T>(&mut self, name: &NulTerminatedStr, value: T)
             where T: Encode {
         *self.get_mut_ivar::<T>(name) = value;
     }
@@ -509,7 +511,7 @@ mod tests {
     #[test]
     fn test_ivar() {
         let cls = test_utils::custom_class();
-        let ivar = cls.instance_variable("_foo").unwrap();
+        let ivar = cls.instance_variable(ntstr!("_foo")).unwrap();
         assert!(ivar.name() == "_foo");
         assert!(ivar.type_encoding() == &<u32>::encode());
         assert!(ivar.offset() > 0);
@@ -521,7 +523,7 @@ mod tests {
     #[test]
     fn test_method() {
         let cls = test_utils::custom_class();
-        let sel = Sel::register("foo");
+        let sel = Sel::register(ntstr!("foo"));
         let method = cls.instance_method(sel).unwrap();
         assert!(method.name().name() == "foo");
         assert!(method.arguments_count() == 2);
@@ -595,9 +597,10 @@ mod tests {
     fn test_object() {
         let mut obj = test_utils::custom_object();
         assert!(obj.class() == test_utils::custom_class());
+        let ivar_name = ntstr!("_foo");
         let result: u32 = unsafe {
-            obj.set_ivar("_foo", 4u32);
-            *obj.get_ivar("_foo")
+            obj.set_ivar(ivar_name, 4u32);
+            *obj.get_ivar(ivar_name)
         };
         assert!(result == 4);
     }

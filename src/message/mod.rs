@@ -79,11 +79,12 @@ pub unsafe trait Message {
     # Example
     ``` no_run
     # #[macro_use] extern crate objc;
+    # #[macro_use] extern crate nul;
     # use objc::runtime::{BOOL, Class, Object};
     # use objc::Message;
     # fn main() {
     let obj: &Object;
-    # obj = unsafe { msg_send![Class::get("NSObject").unwrap(), new] };
+    # obj = unsafe { msg_send![Class::get(ntstr!("NSObject")).unwrap(), new] };
     let sel = sel!(isKindOfClass:);
     // Verify isKindOfClass: takes one Class and returns a BOOL
     let result = obj.verify_message::<(&Class,), BOOL>(sel);

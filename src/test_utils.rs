@@ -66,18 +66,18 @@ pub fn custom_class() -> &'static Class {
         // The runtime will call this method, so it has to be implemented
         extern fn custom_obj_class_initialize(_this: &Class, _cmd: Sel) { }
 
-        let mut decl = ClassDecl::root("CustomObject", custom_obj_class_initialize).unwrap();
+        let mut decl = ClassDecl::root(ntstr!("CustomObject"), custom_obj_class_initialize).unwrap();
         let proto = custom_protocol();
 
         decl.add_protocol(proto);
-        decl.add_ivar::<u32>("_foo");
+        decl.add_ivar::<u32>(ntstr!("_foo"));
 
         extern fn custom_obj_set_foo(this: &mut Object, _cmd: Sel, foo: u32) {
-            unsafe { this.set_ivar::<u32>("_foo", foo); }
+            unsafe { this.set_ivar::<u32>(ntstr!("_foo"), foo); }
         }
 
         extern fn custom_obj_get_foo(this: &Object, _cmd: Sel) -> u32 {
-            unsafe { *this.get_ivar::<u32>("_foo") }
+            unsafe { *this.get_ivar::<u32>(ntstr!("_foo")) }
         }
 
         extern fn custom_obj_get_struct(_this: &Object, _cmd: Sel) -> CustomStruct {
@@ -89,7 +89,7 @@ pub fn custom_class() -> &'static Class {
         }
 
         extern fn custom_obj_set_bar(this: &mut Object, _cmd: Sel, bar: u32) {
-            unsafe { this.set_ivar::<u32>("_foo", bar) ;}
+            unsafe { this.set_ivar::<u32>(ntstr!("_foo"), bar) ;}
         }
 
         extern fn custom_obj_add_number_to_number(_this: &Class, _cmd: Sel, fst: i32, snd: i32) -> i32 {
@@ -115,14 +115,14 @@ pub fn custom_class() -> &'static Class {
         decl.register();
     });
 
-    Class::get("CustomObject").unwrap()
+    Class::get(ntstr!("CustomObject")).unwrap()
 }
 
 pub fn custom_protocol() -> &'static Protocol {
     static REGISTER_CUSTOM_PROTOCOL: Once = ONCE_INIT;
 
     REGISTER_CUSTOM_PROTOCOL.call_once(|| {
-        let mut decl = ProtocolDecl::new("CustomProtocol").unwrap();
+        let mut decl = ProtocolDecl::new(ntstr!("CustomProtocol")).unwrap();
 
         decl.add_method_description::<(i32,), ()>(sel!(setBar:), true);
         decl.add_method_description::<(), *const c_char>(sel!(getName), false);
@@ -131,7 +131,7 @@ pub fn custom_protocol() -> &'static Protocol {
         decl.register();
     });
 
-    Protocol::get("CustomProtocol").unwrap()
+    Protocol::get(ntstr!("CustomProtocol")).unwrap()
 }
 
 pub fn custom_subprotocol() -> &'static Protocol {
@@ -139,7 +139,7 @@ pub fn custom_subprotocol() -> &'static Protocol {
 
     REGISTER_CUSTOM_SUBPROTOCOL.call_once(|| {
         let super_proto = custom_protocol();
-        let mut decl = ProtocolDecl::new("CustomSubProtocol").unwrap();
+        let mut decl = ProtocolDecl::new(ntstr!("CustomSubProtocol")).unwrap();
 
         decl.add_protocol(super_proto);
         decl.add_method_description::<(u32,), u32>(sel!(calculateFoo:), true);
@@ -147,7 +147,7 @@ pub fn custom_subprotocol() -> &'static Protocol {
         decl.register();
     });
 
-    Protocol::get("CustomSubProtocol").unwrap()
+    Protocol::get(ntstr!("CustomSubProtocol")).unwrap()
 }
 
 pub fn custom_object() -> CustomObject {
@@ -159,7 +159,7 @@ pub fn custom_subclass() -> &'static Class {
 
     REGISTER_CUSTOM_SUBCLASS.call_once(|| {
         let superclass = custom_class();
-        let mut decl = ClassDecl::new("CustomSubclassObject", superclass).unwrap();
+        let mut decl = ClassDecl::new(ntstr!("CustomSubclassObject"), superclass).unwrap();
 
         extern fn custom_subclass_get_foo(this: &Object, _cmd: Sel) -> u32 {
             let foo: u32 = unsafe {
@@ -176,7 +176,7 @@ pub fn custom_subclass() -> &'static Class {
         decl.register();
     });
 
-    Class::get("CustomSubclassObject").unwrap()
+    Class::get(ntstr!("CustomSubclassObject")).unwrap()
 }
 
 pub fn custom_subclass_object() -> CustomObject {

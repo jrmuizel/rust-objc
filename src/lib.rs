@@ -7,10 +7,11 @@ Objective-C objects can be messaged using the [`msg_send!`](macro.msg_send!.html
 
 ``` no_run
 # #[macro_use] extern crate objc;
+# #[macro_use] extern crate nul;
 # use objc::runtime::{BOOL, Class, Object};
 # fn main() {
 # unsafe {
-let cls = Class::get("NSObject").unwrap();
+let cls = Class::get(ntstr!("NSObject")).unwrap();
 let obj: *mut Object = msg_send![cls, new];
 let hash: usize = msg_send![obj, hash];
 let is_kind: BOOL = msg_send![obj, isKindOfClass:cls];
@@ -61,6 +62,8 @@ The bindings can be used on Linux or *BSD utilizing the
 #![warn(missing_docs)]
 
 extern crate malloc_buf;
+#[cfg_attr(test, macro_use)]
+extern crate nul;
 extern crate objc_encode;
 #[cfg(feature = "exception")]
 extern crate objc_exception;

@@ -8,7 +8,7 @@ Objective-C Runtime bindings and wrapper for Rust.
 Objective-C objects can be messaged using the `msg_send!` macro:
 
 ``` rust
-let cls = Class::get("NSObject").unwrap();
+let cls = Class::get(ntstr!("NSObject")).unwrap();
 let obj: *mut Object = msg_send![cls, new];
 let hash: usize = msg_send![obj, hash];
 let is_kind: BOOL = msg_send![obj, isKindOfClass:cls];

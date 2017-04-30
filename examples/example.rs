@@ -1,4 +1,6 @@
 #[macro_use]
+extern crate nul;
+#[macro_use]
 extern crate objc;
 
 use objc::Encode;
@@ -23,7 +25,7 @@ impl Drop for StrongPtr {
 
 fn main() {
     // Get a class
-    let cls = Class::get("NSObject").unwrap();
+    let cls = Class::get(ntstr!("NSObject")).unwrap();
     println!("NSObject size: {}", cls.instance_size());
 
     // Inspect its ivars
@@ -42,7 +44,7 @@ fn main() {
 
     // Access an ivar of the object
     let isa: *const Class = unsafe {
-        *obj.get_ivar("isa")
+        *obj.get_ivar(ntstr!("isa"))
     };
     println!("NSObject isa: {:?}", isa);
 
