@@ -25,7 +25,7 @@ verify_message = []
 
 [dependencies]
 malloc_buf = "1.0"
-objc-encode = "0.0.2"
+objc-encode = "0.0.3"
 
 [dependencies.objc_exception]
 version = "0.1"
