@@ -7,7 +7,7 @@ Objective-C objects can be messaged using the [`msg_send!`](macro.msg_send!.html
 
 ``` no_run
 # #[macro_use] extern crate objc;
-# #[macro_use] extern crate nul;
+# #[macro_use] extern crate terminated;
 # use objc::runtime::{BOOL, Class, Object};
 # fn main() {
 # unsafe {
@@ -63,7 +63,7 @@ The bindings can be used on Linux or *BSD utilizing the
 
 extern crate malloc_buf;
 #[cfg_attr(test, macro_use)]
-extern crate nul;
+extern crate terminated;
 extern crate objc_encode;
 #[cfg(feature = "exception")]
 extern crate objc_exception;

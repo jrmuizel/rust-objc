@@ -11,7 +11,7 @@ one ivar, a `u32` named `_number` and a `number` method that returns it:
 
 ``` no_run
 # #[macro_use] extern crate objc;
-# #[macro_use] extern crate nul;
+# #[macro_use] extern crate terminated;
 # use objc::declare::ClassDecl;
 # use objc::runtime::{Class, Object, Sel};
 # fn main() {
@@ -40,7 +40,7 @@ use std::mem;
 use std::os::raw::c_char;
 use std::ptr;
 
-use nul::NulTerminatedStr;
+use terminated::NulTerminatedStr;
 use objc_encode::{Encode, Encodings};
 
 use runtime::{BOOL, Class, Imp, NO, Object, Protocol, Sel, self};

@@ -1,5 +1,5 @@
 #[macro_use]
-extern crate nul;
+extern crate terminated;
 #[macro_use]
 extern crate objc;
 

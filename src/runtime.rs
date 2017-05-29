@@ -10,7 +10,7 @@ use std::ptr;
 use std::str;
 
 use malloc_buf::Malloc;
-use nul::NulTerminatedStr;
+use terminated::NulTerminatedStr;
 use objc_encode::Encode;
 use objc_encode::parse::StrEncoding;
 
