@@ -21,7 +21,7 @@ exclude = [
 
 [features]
 exception = ["objc_exception"]
-static_sel = ["objc_macros"]
+static_sel = ["objc-macros"]
 verify_message = []
 
 [dependencies]
@@ -31,6 +31,7 @@ malloc_buf = "0.0"
 version = "0.1"
 optional = true
 
-[dependencies.objc_macros]
+[dependencies.objc-macros]
 version = "0.1"
+path = "objc-macros"
 optional = true
