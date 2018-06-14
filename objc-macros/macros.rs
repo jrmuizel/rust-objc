@@ -36,7 +36,7 @@ pub fn sel_internal(ts: TokenStream) -> TokenStream {
     // Create the data literal & count the byte length.
     let mut len = 0;
     let mut data = String::new();
-    for byte in body.bytes().filter(|c| c != b' ') {
+    for byte in body.bytes().filter(|&c| c != b' ') {
         len += 1;
         write!(&mut data, "{}, ", byte).unwrap();
     }
