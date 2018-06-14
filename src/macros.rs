@@ -53,20 +53,25 @@ macro_rules! sel {
     ($($t:tt)+) => ({
         #[inline(always)]
         fn do_it() -> $crate::runtime::Sel {
+
             // See sel-macros/macros.rs for implementation details.
             #[allow(dead_code)]
             #[derive(__objc_sel_internal)]
             struct X([(); (stringify!(__SEL_START_MARKER__ $($t)* __SEL_END_MARKER__), 0).1]);
 
+            struct Cheaty(*const [u8; SEL_LEN]);
+            unsafe impl Send for Cheaty {}
+            unsafe impl Sync for Cheaty {}
+
             // Place the constant value in the correct section.
             #[link_section="__TEXT,__objc_methname,cstring_literals"]
             static VALUE : [u8; SEL_LEN] = SEL_DATA;
             #[link_section="__DATA,__objc_selrefs,literal_pointers,no_dead_strip"]
-            static REF : &'static [u8; SEL_LEN] = &VALUE;
+            static REF : Cheaty = Cheaty(&VALUE);
 
             // Produce a sel type as a result.
             // XXX(nika): Don't use transmute?
-            unsafe { ::std::mem::transmute::<_, $crate::runtime::Sel>(REF) }
+            unsafe { ::std::mem::transmute::<_, $crate::runtime::Sel>(REF.0) }
         }
         do_it()
     });
