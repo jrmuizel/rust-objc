@@ -1,0 +1,14 @@
+[package]
+name = "objc-macros"
+version = "0.1.0"
+authors = ["Nika Layzell <nika@thelayzells.com>"]
+
+description = "Helper macros for the 'objc' crate"
+keywords = ["objective-c", "osx", "ios", "cocoa", "uikit"]
+repository = "http://github.com/SSheldon/rust-objc"
+documentation = "http://ssheldon.github.io/rust-objc/objc/"
+license = "MIT"
+
+[lib]
+path = "macros.rs"
+proc-macro = true

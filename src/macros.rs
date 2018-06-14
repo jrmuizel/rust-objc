@@ -10,6 +10,7 @@ let sel = sel!(setObject:forKey:);
 # }
 ```
 */
+#[cfg(not(feature = "static_sel"))]
 #[macro_export]
 macro_rules! sel {
     // Declare a function to hide unsafety, otherwise we can trigger the
@@ -29,6 +30,42 @@ macro_rules! sel {
             unsafe { $crate::runtime::sel_registerName(ptr) }
         }
         register_sel(concat!($(stringify!($name), ':'),+, '\0'))
+    });
+}
+
+/**
+Registers a selector, returning a `Sel`.
+
+# Example
+```
+# #[macro_use] extern crate objc;
+# fn main() {
+let sel = sel!(description);
+let sel = sel!(setObject:forKey:);
+# }
+```
+*/
+#[cfg(feature = "static_sel")]
+#[macro_export]
+macro_rules! sel {
+    ($($t:tt)+) => ({
+        // See sel-macros/macros.rs for implementation details.
+        #[allow(dead_code)]
+        #[derive(__objc_sel_internal)]
+        struct X([(); {
+            // Use block-in-array-length to smuggle tokens into the macro.
+            stringify!(__SEL_START_MARKER__ $($t)* __SEL_END_MARKER__); 0
+        }]);
+
+        // Place the constant value in the correct section.
+        #[link_section="__TEXT,__objc_methname,cstring_literals"]
+        static VALUE : [u8; SEL_LEN] = SEL_DATA;
+        #[link_section="__DATA,__objc_selrefs,literal_pointers,no_dead_strip"]
+        static REF : &'static [u8; SEL_LEN] = &VALUE;
+
+        // Produce a sel type as a result.
+        // XXX(nika): Don't use transmute?
+        unsafe { ::std::mem::transmute<_, $crate::Sel>(REF) }
     });
 }
 

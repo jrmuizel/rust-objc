@@ -21,11 +21,16 @@ exclude = [
 
 [features]
 exception = ["objc_exception"]
+static_sel = ["objc_macros"]
 verify_message = []
 
 [dependencies]
 malloc_buf = "0.0"
 
 [dependencies.objc_exception]
+version = "0.1"
+optional = true
+
+[dependencies.objc_macros]
 version = "0.1"
 optional = true

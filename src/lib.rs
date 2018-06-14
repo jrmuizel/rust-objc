@@ -64,6 +64,15 @@ extern crate malloc_buf;
 #[cfg(feature = "exception")]
 extern crate objc_exception;
 
+#[cfg(feature = "static_sel")]
+#[macro_use]
+#[allow(unused_imports)]
+extern crate objc_macros;
+
+#[cfg(feature = "static_sel")]
+#[doc(hidden)]
+pub use objc_macros::*;
+
 pub use encode::{Encode, EncodeArguments, Encoding};
 pub use message::{Message, MessageArguments, MessageError};
 
