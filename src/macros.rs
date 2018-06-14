@@ -67,7 +67,7 @@ macro_rules! sel {
             #[link_section="__TEXT,__objc_methname,cstring_literals"]
             static VALUE : [u8; SEL_LEN] = SEL_DATA;
             #[link_section="__DATA,__objc_selrefs,literal_pointers,no_dead_strip"]
-            static REF : Cheaty = Cheaty(&VALUE);
+            static mut REF : Cheaty = Cheaty(&VALUE);
 
             // Produce a sel type as a result.
             // XXX(nika): Don't use transmute?
