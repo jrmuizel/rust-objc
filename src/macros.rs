@@ -48,21 +48,27 @@ let sel = sel!(setObject:forKey:);
 #[cfg(feature = "static_sel")]
 #[macro_export]
 macro_rules! sel {
+    // Declare a function to hide unsafety, otherwise we can trigger the
+    // unused_unsafe lint; see rust-lang/rust#8472
     ($($t:tt)+) => ({
-        // See sel-macros/macros.rs for implementation details.
-        #[allow(dead_code)]
-        #[derive(__objc_sel_internal)]
-        struct X([(); (stringify!(__SEL_START_MARKER__ $($t)* __SEL_END_MARKER__), 0).1]);
+        #[inline(always)]
+        fn do_it() -> $crate::runtime::Sel {
+            // See sel-macros/macros.rs for implementation details.
+            #[allow(dead_code)]
+            #[derive(__objc_sel_internal)]
+            struct X([(); (stringify!(__SEL_START_MARKER__ $($t)* __SEL_END_MARKER__), 0).1]);
 
-        // Place the constant value in the correct section.
-        #[link_section="__TEXT,__objc_methname,cstring_literals"]
-        static VALUE : [u8; SEL_LEN] = SEL_DATA;
-        #[link_section="__DATA,__objc_selrefs,literal_pointers,no_dead_strip"]
-        static REF : &'static [u8; SEL_LEN] = &VALUE;
+            // Place the constant value in the correct section.
+            #[link_section="__TEXT,__objc_methname,cstring_literals"]
+            static VALUE : [u8; SEL_LEN] = SEL_DATA;
+            #[link_section="__DATA,__objc_selrefs,literal_pointers,no_dead_strip"]
+            static REF : &'static [u8; SEL_LEN] = &VALUE;
 
-        // Produce a sel type as a result.
-        // XXX(nika): Don't use transmute?
-        unsafe { ::std::mem::transmute::<_, $crate::runtime::Sel>(REF) }
+            // Produce a sel type as a result.
+            // XXX(nika): Don't use transmute?
+            unsafe { ::std::mem::transmute::<_, $crate::runtime::Sel>(REF) }
+        }
+        do_it()
     });
 }
 
