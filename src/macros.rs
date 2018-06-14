@@ -65,7 +65,7 @@ macro_rules! sel {
 
         // Produce a sel type as a result.
         // XXX(nika): Don't use transmute?
-        unsafe { ::std::mem::transmute<_, $crate::Sel>(REF) }
+        unsafe { ::std::mem::transmute::<_, $crate::Sel>(REF) }
     });
 }
 
