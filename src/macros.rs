@@ -52,10 +52,7 @@ macro_rules! sel {
         // See sel-macros/macros.rs for implementation details.
         #[allow(dead_code)]
         #[derive(__objc_sel_internal)]
-        struct X([(); {
-            // Use block-in-array-length to smuggle tokens into the macro.
-            stringify!(__SEL_START_MARKER__ $($t)* __SEL_END_MARKER__); 0
-        }]);
+        struct X([(); (stringify!(__SEL_START_MARKER__ $($t)* __SEL_END_MARKER__), 0).1]);
 
         // Place the constant value in the correct section.
         #[link_section="__TEXT,__objc_methname,cstring_literals"]
@@ -65,7 +62,7 @@ macro_rules! sel {
 
         // Produce a sel type as a result.
         // XXX(nika): Don't use transmute?
-        unsafe { ::std::mem::transmute::<_, $crate::Sel>(REF) }
+        unsafe { ::std::mem::transmute::<_, $crate::runtime::Sel>(REF) }
     });
 }
 
