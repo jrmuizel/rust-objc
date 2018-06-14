@@ -31,14 +31,14 @@ pub fn sel_internal(ts: TokenStream) -> TokenStream {
     // Use markers to find the start and end of useful data.
     let start = tsbuf.find(SELSTART).unwrap() + SELSTART.len();
     let end = tsbuf.rfind(SELEND).unwrap();
-    let body = s[start..end].trim();
+    let body = tsbuf[start..end].trim();
 
     // Create the data literal & count the byte length.
     let mut len = 0;
     let mut data = String::new();
-    for byte in tostore.chars().filter(|c| !c.is_whitespace()) {
+    for byte in body.bytes().filter(|c| c != b' ') {
         len += 1;
-        write!(&mut arraylit, "{}, ", byte).unwrap();
+        write!(&mut data, "{}, ", byte).unwrap();
     }
 
     // These length & data constants are used by the sel! macro.
