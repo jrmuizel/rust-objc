@@ -82,6 +82,14 @@ pub use message::send_super_message as __send_super_message;
 #[macro_use]
 mod macros;
 
+#[doc(hidden)]
+pub fn image_info() {
+    #[link_section="__DATA,__objc_imageinfo,regular,no_dead_strip"]
+    static _INFO_VERSION: u32 = 0;
+    #[link_section="__DATA,__objc_imageinfo,regular,no_dead_strip"]
+    static _INFO_FLAGS: u32 = 64;
+}
+
 pub mod runtime;
 pub mod declare;
 mod encode;

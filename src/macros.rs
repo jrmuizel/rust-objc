@@ -63,13 +63,10 @@ macro_rules! sel {
             unsafe impl Send for Cheaty {}
             unsafe impl Sync for Cheaty {}
 
+            $crate::image_info();
+
             #[link_section="__TEXT,__objc_methname,cstring_literals"]
             static VALUE : [u8; SEL_LEN] = SEL_DATA;
-            #[link_section="__DATA,__objc_imageinfo,regular,no_dead_strip"]
-            static info_version: u32 = 0;
-            #[link_section="__DATA,__objc_imageinfo,regular,no_dead_strip"]
-            static info_flags: u32 = 64;
-
             // Place the constant value in the correct section.
             #[link_section="__DATA,__objc_selrefs,literal_pointers,no_dead_strip"]
             static mut REF : Cheaty = Cheaty(&VALUE);
